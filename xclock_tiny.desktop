@@ -5,6 +5,6 @@ Comment=XClock Tiny
 Exec=xclock_tiny
 Icon=xclock_tiny.png
 Terminal=false
-StartupWMClass=ru.altlinux.clock.widget
+StartupWMClass=ru.altlinux.xclock_tiny.widget
 Categories=Utility;Clock;
 StartupWMClass=XClockTiny

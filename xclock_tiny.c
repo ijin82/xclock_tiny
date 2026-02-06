@@ -1,6 +1,6 @@
 // install libs
 // sudo apt-get install libX11-devel libXft-devel libXext-devel
-// compile
+// build
 // gcc xclock_tiny.c -o xclock_tiny -lX11 -lXft -lXext -I/usr/include/freetype2
 
 #include <X11/Xlib.h>

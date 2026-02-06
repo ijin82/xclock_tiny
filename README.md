@@ -5,8 +5,7 @@ Tiny clock app for Gnome (tested on 48 version, wayland session).
 It is designed to display the clock on top of other windows when the main panel is hidden or inaccessible.  
 It is convenient for use with two or more monitors, as a system clock on top of games.
 
-<img width="944" height="533" alt="Screenshot From 2026-02-06 15-49-28" src="https://github.com/user-attachments/assets/80c7b8a9-0214-4211-8639-558a4bb9ffa1" />
-
+<img width="996" height="585" alt="Screenshot From 2026-02-06 15-53-27" src="https://github.com/user-attachments/assets/769dcf55-996d-423e-8bba-5583c3c69169" />
 
 ## Build & Install
 

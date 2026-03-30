@@ -14,7 +14,7 @@ cd ~/your-folder-name
 
 git clone [this repo] .
 
-sudo apt-get install libX11-devel libXft-devel libXext-devel
+sudo apt-get install libX11-devel libXft-devel libXext-devel gcc
 
 gcc xclock_tiny.c -o xclock_tiny -lX11 -lXft -lXext -I/usr/include/freetype2
 

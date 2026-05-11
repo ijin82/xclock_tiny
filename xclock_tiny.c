@@ -39,8 +39,8 @@ void get_keyboard_layout(char *buf, size_t len) {
     if (buf[0] >= 'A' && buf[0] <= 'Z') buf[0] += 32;
     if (buf[1] >= 'A' && buf[1] <= 'Z') buf[1] += 32;
 
-    if (strcmp(buf, "US") == 0) {
-        strcpy(buf, "EN");
+    if (strcmp(buf, "us") == 0) {
+        strcpy(buf, "en");
     }
 }
 

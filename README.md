@@ -36,5 +36,5 @@ chmod +x setup.sh
 
 ## Plans
 
-- Configuration options 
+- Configuration options
 - Flathub submission

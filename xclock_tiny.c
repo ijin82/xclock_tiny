@@ -10,12 +10,47 @@
 #include <time.h>
 #include <unistd.h>
 #include <X11/Xatom.h>
+#include <X11/XKBlib.h>
 
 typedef struct {
     unsigned long flags, functions, decorations;
     long input_mode;
     unsigned long status;
 } PropMotifHints;
+
+void get_keyboard_layout(Display *display, char *buf, size_t len) {
+    XkbStateRec state;
+    XkbGetState(display, XkbUseCoreKbd, &state);
+
+    // Выделяем пустую структуру для заполнения
+    XkbDescPtr desc = XkbAllocKeyboard();
+    if (!desc) {
+        snprintf(buf, len, "??");
+        return;
+    }
+
+    // Запрашиваем имена групп. 3-й параметр — это сам дескриптор.
+    if (XkbGetNames(display, XkbGroupNamesMask, desc) != Success) {
+        XkbFreeKeyboard(desc, XkbAllComponentsMask, True);
+        snprintf(buf, len, "??");
+        return;
+    }
+
+    if (desc->names && desc->names->groups[state.group] != None) {
+        char *group_name = XGetAtomName(display, desc->names->groups[state.group]);
+        if (group_name) {
+            snprintf(buf, len, "%.2s", group_name);
+            XFree(group_name);
+        } else {
+            snprintf(buf, len, "??");
+        }
+    } else {
+        snprintf(buf, len, "??");
+    }
+
+    // Полная очистка структуры
+    XkbFreeKeyboard(desc, XkbAllComponentsMask, True);
+}
 
 void set_rounded_corners(Display *d, Window w, int width, int height, int r) {
     Pixmap mask = XCreatePixmap(d, w, width, height, 1);
@@ -37,7 +72,7 @@ void set_rounded_corners(Display *d, Window w, int width, int height, int r) {
 int main() {
     Display *d = XOpenDisplay(NULL);
     int s = DefaultScreen(d);
-    int w_width = 120, w_height = 34, radius = 20;
+    int w_width = 140, w_height = 34, radius = 20;
 
     Window w = XCreateSimpleWindow(d, RootWindow(d, s), 10, 10, w_width, w_height, 0, 0, BlackPixel(d, s));
 
@@ -75,22 +110,41 @@ int main() {
 
     XEvent e;
     int dx, dy;
+    char final_str[24];
+    char layout[4];
+    char s_t[9] = " ";
+    char current_s_t[9] = "";
+    char last_final_str[24] = ""; 
+    int last_group = -1;
+    XkbStateRec state;
+
+    strcpy(s_t, "XX:XX"); 
+    
     while (1) {
         while (XPending(d)) {
             XNextEvent(d, &e);
             if (e.type == ButtonPress && e.xbutton.button == 3) return 0;
             if (e.type == ButtonPress && e.xbutton.button == 1) { dx = e.xbutton.x; dy = e.xbutton.y; }
             if (e.type == MotionNotify) XMoveWindow(d, w, e.xmotion.x_root - dx, e.xmotion.y_root - dy);
+             if (e.type == Expose) { strcpy(s_t, "XX:XX"); }
         }
         time_t t = time(NULL);
-        XClearWindow(d, w);
-        // char s_t[9];
-        // strftime(s_t, 9, "%H:%M:%S", localtime(&t));
-        // XftDrawStringUtf8(draw, &col, font, 22, 33, (FcChar8*)s_t, 8);
-        char s_t[6];
-        strftime(s_t, sizeof(s_t), "%H:%M", localtime(&t));
-        XftDrawStringUtf8(draw, &col, font, 22, 25, (FcChar8*)s_t, 5);
-        XFlush(d);
-        usleep(200000); // 5 times in second
+        struct tm *tmp = localtime(&t);
+
+        XkbGetState(d, XkbUseCoreKbd, &state);
+
+        strftime(current_s_t, sizeof(current_s_t), "%H:%M", localtime(&t));
+
+        if (strcmp(current_s_t, s_t) != 0 || state.group != last_group) {
+            get_keyboard_layout(d, layout, sizeof(layout));
+            strcpy(s_t, current_s_t);
+            last_group = state.group;
+            snprintf(final_str, sizeof(final_str), "%s %s", s_t, layout);
+            XClearWindow(d, w);
+            XftDrawStringUtf8(draw, &col, font, 15, 25, (FcChar8*)final_str, strlen(final_str));
+            XFlush(d);
+        }
+
+        usleep(500000); // 2 times in second
     }
 }

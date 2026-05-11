@@ -18,38 +18,30 @@ typedef struct {
     unsigned long status;
 } PropMotifHints;
 
-void get_keyboard_layout(Display *display, char *buf, size_t len) {
-    XkbStateRec state;
-    XkbGetState(display, XkbUseCoreKbd, &state);
-
-    // Выделяем пустую структуру для заполнения
-    XkbDescPtr desc = XkbAllocKeyboard();
-    if (!desc) {
-        snprintf(buf, len, "??");
-        return;
-    }
-
-    // Запрашиваем имена групп. 3-й параметр — это сам дескриптор.
-    if (XkbGetNames(display, XkbGroupNamesMask, desc) != Success) {
-        XkbFreeKeyboard(desc, XkbAllComponentsMask, True);
-        snprintf(buf, len, "??");
-        return;
-    }
-
-    if (desc->names && desc->names->groups[state.group] != None) {
-        char *group_name = XGetAtomName(display, desc->names->groups[state.group]);
-        if (group_name) {
-            snprintf(buf, len, "%.2s", group_name);
-            XFree(group_name);
-        } else {
-            snprintf(buf, len, "??");
+void get_keyboard_layout(char *buf, size_t len) {
+    FILE *fp = popen("gsettings get org.gnome.desktop.input-sources mru-sources", "r");
+    if (fp) {
+        char out[512];
+        if (fgets(out, sizeof(out), fp)) {
+            // Ищем первое вхождение 'xkb'
+            char *p = strstr(out, "'xkb'");
+            if (p) {
+                // Пропускаем 'xkb', и ищем начало самой раскладки (после запятой и кавычки)
+                p = strstr(p + 5, "'"); 
+                if (p) {
+                    snprintf(buf, len, "%.2s", p + 1);
+                }
+            }
         }
-    } else {
-        snprintf(buf, len, "??");
+        pclose(fp);
     }
+    
+    if (buf[0] >= 'A' && buf[0] <= 'Z') buf[0] += 32;
+    if (buf[1] >= 'A' && buf[1] <= 'Z') buf[1] += 32;
 
-    // Полная очистка структуры
-    XkbFreeKeyboard(desc, XkbAllComponentsMask, True);
+    if (strcmp(buf, "US") == 0) {
+        strcpy(buf, "EN");
+    }
 }
 
 void set_rounded_corners(Display *d, Window w, int width, int height, int r) {
@@ -71,6 +63,11 @@ void set_rounded_corners(Display *d, Window w, int width, int height, int r) {
 
 int main() {
     Display *d = XOpenDisplay(NULL);
+
+    int xkb_event, xkb_error, xkb_major = XkbMajorVersion, xkb_minor = XkbMinorVersion, xkb_reason;
+    XkbQueryExtension(d, &xkb_event, &xkb_error, &xkb_reason, &xkb_major, &xkb_minor);
+    XkbSelectEventDetails(d, XkbUseCoreKbd, XkbStateNotify, XkbAllStateComponentsMask, XkbGroupStateMask);
+
     int s = DefaultScreen(d);
     int w_width = 140, w_height = 34, radius = 20;
 
@@ -116,35 +113,44 @@ int main() {
     char current_s_t[9] = "";
     char last_final_str[24] = ""; 
     int last_group = -1;
-    XkbStateRec state;
+    char last_layout[8] = "";
+    char current_layout[8] = "";
 
     strcpy(s_t, "XX:XX"); 
+
+    XkbStateRec xkb_state;
     
     while (1) {
         while (XPending(d)) {
             XNextEvent(d, &e);
             if (e.type == ButtonPress && e.xbutton.button == 3) return 0;
-            if (e.type == ButtonPress && e.xbutton.button == 1) { dx = e.xbutton.x; dy = e.xbutton.y; }
-            if (e.type == MotionNotify) XMoveWindow(d, w, e.xmotion.x_root - dx, e.xmotion.y_root - dy);
-             if (e.type == Expose) { strcpy(s_t, "XX:XX"); }
+            if (e.type == ButtonPress && e.xbutton.button == 1) {
+                dx = e.xbutton.x; dy = e.xbutton.y;
+            }
+            if (e.type == MotionNotify) 
+                XMoveWindow(d, w, e.xmotion.x_root - dx, e.xmotion.y_root - dy);
+            if (e.type == Expose) strcpy(s_t, "XX:XX");
         }
+
         time_t t = time(NULL);
         struct tm *tmp = localtime(&t);
+        strftime(current_s_t, sizeof(current_s_t), "%H:%M", tmp);
 
-        XkbGetState(d, XkbUseCoreKbd, &state);
+        // Внутри цикла:
+        get_keyboard_layout(current_layout, sizeof(current_layout));
 
-        strftime(current_s_t, sizeof(current_s_t), "%H:%M", localtime(&t));
-
-        if (strcmp(current_s_t, s_t) != 0 || state.group != last_group) {
-            get_keyboard_layout(d, layout, sizeof(layout));
+        if (strcmp(current_s_t, s_t) != 0 || strcmp(current_layout, last_layout) != 0) {
+            strcpy(last_layout, current_layout);
             strcpy(s_t, current_s_t);
-            last_group = state.group;
-            snprintf(final_str, sizeof(final_str), "%s %s", s_t, layout);
+
+            // ВАЖНО: используем current_layout
+            snprintf(final_str, sizeof(final_str), "%s %s", s_t, current_layout);
+            
             XClearWindow(d, w);
             XftDrawStringUtf8(draw, &col, font, 15, 25, (FcChar8*)final_str, strlen(final_str));
             XFlush(d);
         }
 
-        usleep(500000); // 2 times in second
+        usleep(200000); // 5 раз в секунду для отзывчивости
     }
 }

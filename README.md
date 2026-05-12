@@ -1,11 +1,11 @@
 # XClock Tiny
 
-Tiny clock app for Gnome (tested on 48 version, wayland session).
+Tiny clock app for GNOME (tested on 48 version, wayland session).
 
 It is designed to display the clock on top of other windows when the main panel is hidden or inaccessible.  
 It is convenient for use with two or more monitors, as a system clock on top of games.
 
-<img width="996" height="585" alt="Screenshot From 2026-02-06 15-53-27" src="https://github.com/user-attachments/assets/769dcf55-996d-423e-8bba-5583c3c69169" />
+<img width="995" height="598" alt="Screenshot From 2026-05-12 12-58-22" src="https://github.com/user-attachments/assets/6a1bacc2-77a7-4e8c-975a-caa84c09e78c" />
 
 ## Build & Install
 
@@ -31,6 +31,9 @@ chmod +x setup.sh
 - Right click - exit
 - Left  click - drag window
 - Alt+Space - call system menu to set up "Always on top" (because of the security issues it is not possible to enable "always on top" by default for now)
+
+## Useful
+It is convenient to use GNOME **Extension Alt-Tab Hide** to exclude this window from Alt-Tab queue
 
 **No configuration included**, but for now you can easily fix the code by yourself, it's quite simple.
 
